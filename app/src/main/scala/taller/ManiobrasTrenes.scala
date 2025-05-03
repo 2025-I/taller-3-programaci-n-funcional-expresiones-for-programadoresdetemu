@@ -1,105 +1,115 @@
 package taller
 
 import scala.annotation.tailrec
-/*
-type Vagon = Any
-type Tren = List[Vagon]
-type Estado = (Tren, Tren, Tren)
 
-trait Movimiento
-case class Principal(n: Int) extends Movimiento
-case class Uno(n: Int) extends Movimiento
-case class Dos(n: Int) extends Movimiento
-*/
 class ManiobrasTrenes {
   type Vagon = Any
   type Tren = List[Vagon]
   type Estado = (Tren, Tren, Tren)
+  type Maniobra = List[Movimiento]
 
   trait Movimiento
+
   case class Principal(n: Int) extends Movimiento
+
   case class Uno(n: Int) extends Movimiento
+
   case class Dos(n: Int) extends Movimiento
 
   def aplicarMovimiento(e: Estado, m: Movimiento): Estado = {
-    val(principal, uno, dos) = e  // los Estados signfican los trenes
+    val (principal, uno, dos) = e // los Estados significan los trenes
 
     m match {
-      case Uno(n) if n>0 => {
-        // La funcion min escoje el valor minimo entre los dos, entonces si necesita mover 10 vagones y solo se pueden 2, que escoja 2
-        //val cantidadVagonesMover = if(n<principal.length) n else principal.length
-        val cantidadVagonesMover = (n min principal.length) // Utilizamos la funcion min para que coja lo que se puede y no haya desbordes
-        val (vagonesPendientes, vagonesMovidos) = moverUltimosElementos(principal, cantidadVagonesMover)
-        //retornamos la posicion de como quedaron las 3 listas (estado), teniendo en cuenta que incrementa a Uno
-        //Pendiente retornar la tripleta de listas, teniendo en cuenta lo anterior (lista1, lista2, lista3),
-        //(Principal, Uno, Dos)
-        (vagonesPendientes, uno ++ vagonesMovidos, dos)
+      case Uno(n) if n < 0 => {
+        // La condicion es para que en los negativos se desplace
+        if (uno.length == 0) {
+          // Utilizamos la condicion para cuidar el desbordamiento y solamente mueva los que se puedan mover sin ningun error
+          val cantidadVagonesMover = if (n < principal.length) n else principal.length
+          val (vagonesMovidos, vagonesPendientes) = moverPrimerosElementos(principal, cantidadVagonesMover)
+          (vagonesPendientes, uno ++ vagonesMovidos, dos)
+        } else {
+          val cantidadVagonesMover = if (n < principal.length) n else principal.length
+          val (vagonesMovidos, vagonesPendientes) = moverPrimerosElementos(uno, cantidadVagonesMover)
+          (principal ++ vagonesMovidos, vagonesPendientes, dos)
+        }
       }
-      case Uno(n) if n<0 => {
-        val cantidadVagonesMover = (n min principal.length) // Utilizamos la funcion min para que coja lo que se puede y no haya desbordes
-        val (vagonesMovidos, vagonesPendientes) = moverPrimerosElementos(uno, cantidadVagonesMover)
-        //retornamos la posicion de como quedaron las 3 listas (estado), teniendo en cuenta que incrementa a Uno
-        (vagonesMovidos ++ principal, vagonesPendientes, dos)
-      }/*
-      case Uno(n) if n==0 =>{
-        //retornamos la posicion de como quedaron las 3 listas (estado)
-      }*/
-      case Dos(n) if n>0 => {
-        val cantidadVagonesMover = (n min principal.length)
-        val (vagonesPendientes, vagonesMovidos) = moverUltimosElementos(principal, cantidadVagonesMover)
-        (vagonesPendientes, uno, dos ++ vagonesMovidos)
-      }/*
-      case Dos(n) if n<0 => {
-        //retornamos la posicion de como quedaron las 3 listas (estado), teniendo en cuenta que incrementa a Dos
+      case Uno(n) if n > 0 => {
+        val cantidadVagonesMover = if (n < principal.length) n else principal.length
+        val (vagonesMovidos, vagonesPendientes) = moverUltimosElementos(principal, cantidadVagonesMover)
+        //(vagonesPendientes, uno ++ vagonesMovidos, dos)// funciona perfectamente
+        (vagonesPendientes, vagonesMovidos ++ uno, dos)
+
       }
-      case Dos(n) if n==0 => {
-        //retornamos la posicion de como quedaron las 3 listas (estado)
-      }*/
+      case Uno(n) if n == 0 => {
+        (principal, uno, dos)
+      }
+      case Dos(n) if n < 0 => {
+        if (dos.length == 0) {
+          val cantidadVagonesMover = if (n < principal.length) n else principal.length
+          val (vagonesMovidos, vagonesPendientes) = moverPrimerosElementos(principal, cantidadVagonesMover)
+          (vagonesPendientes, uno, dos ++ vagonesMovidos)
+        } else {
+          val cantidadVagonesMover = if (n < principal.length) n else principal.length
+          val (vagonesMovidos, vagonesPendientes) = moverPrimerosElementos(dos, cantidadVagonesMover)
+          (principal ++ vagonesMovidos, uno, vagonesPendientes)
+        }
+      }
+      case Dos(n) if n > 0 => {
+        val cantidadVagonesMover = if (n < principal.length) n else principal.length
+        val (vagonesMovidos, vagonesPendientes) = moverUltimosElementos(principal, cantidadVagonesMover)
+        //(vagonesPendientes, uno, dos ++ vagonesMovidos)// funciona perfectamente
+        (vagonesPendientes, uno, vagonesMovidos ++ dos)
+      }
+      case Dos(n) if n == 0 => {
+        (principal, uno, dos)
+      }
     }
   }
-
 
   def moverPrimerosElementos[T](lista: List[T], n: Int): (List[T], List[T]) = {
     @tailrec
-    def moverPrimerosElementosAux(l: List[T], i: Int, acc: List[T]): (List[T], List[T]) = {
+    def moverPrimerosElementosAux(l: List[T], i: Int, numVagon: Int, acc1: List[T], acc2: List[T]): (List[T], List[T]) = {
       l match {
-        case Nil => (acc, Nil)
-        case x :: xs =>
-          if (i < n) moverPrimerosElementosAux(xs, i + 1, x::acc)
-          else (acc, l)
-      }
-    }
-    moverPrimerosElementosAux(lista, 0, Nil)
-  }
-
-
-  def moverUltimosElementos[T](lista: List[T], n :Int): (List[T],List[T]) = {
-    @tailrec
-    def moverUltimosElementosAux(l: List[T], i: Int, acc: List[T]): (List[T],List[T]) = {
-      l match {
-        case Nil => (acc,Nil)
-        case x::xs =>
-          if (i < n) moverUltimosElementosAux(xs, i + 1, acc :+ x)
-          else (acc, l)
-      }
-    }
-    moverUltimosElementosAux(lista, 0 ,Nil)
-  }
-
-
-    def aplicarMovimientos(e: Estado ,movs: Maniobra): List[Estado] = {
-      @tailrec
-      def aplicarMovimientosAux(movs: Maniobra, acc: List[Estado]): List[Estado] = {
-        movs match {
-          case Nil => acc
-          case x::xs =>
-            val nuevoEstado = aplicarMovimiento(acc.head, x)
-            // Se llama la funcion aplicar movimiento y se le envia la cabeza para que aplique
-            // el siguiente movimiento
-            aplicarMovimientosAux(xs, nuevoEstado :: acc) // Agregamos el nuevo estado
-          //al acumulador
+        case Nil => (acc1, acc2)
+        case x :: xs => {
+          if (i <= numVagon) moverPrimerosElementosAux(xs, i + 1, numVagon, acc1 :+ x, acc2)
+          else moverPrimerosElementosAux(xs, i + 1, numVagon, acc1, acc2 :+ x)
         }
       }
-      aplicarMovimientosAux(movs, List(e))
-      }*/
+    }
+
+    val numVagon = if (n < 0) n * -1 else n
+    moverPrimerosElementosAux(lista, 1, numVagon, Nil, Nil)
+  }
+
+  def moverUltimosElementos[T](lista: List[T], n: Int): (List[T], List[T]) = {
+    @tailrec
+    def moverUltimosElementosAux(l: List[T], i: Int, numVagon: Int, acc1: List[T], acc2: List[T]): (List[T], List[T]) = {
+      l match {
+        case Nil => (acc1, acc2)
+        case x :: xs => {
+          if (i <= numVagon) moverUltimosElementosAux(xs, i + 1, numVagon, x :: acc1, acc2)
+          else moverUltimosElementosAux(xs, i + 1, numVagon, acc1, x :: acc2)
+        }
+      }
+    }
+
+    val numVagon = if (n < 0) n * -1 else n
+    moverUltimosElementosAux(lista.reverse, 1, numVagon, Nil, Nil)
+  }
+
+
+  def aplicarMovimientos(e: Estado, movs: Maniobra): List[Estado] = {
+    @tailrec
+    def aplicarMovimientosAux(movs: Maniobra, acc: List[Estado]): List[Estado] = {
+      movs match {
+        case Nil => acc
+        case x :: xs =>
+          val nuevoEstado = aplicarMovimiento(acc.head, x)
+          aplicarMovimientosAux(xs, nuevoEstado :: acc) // Agregamos el nuevo estado
+      }
+    }
+
+    aplicarMovimientosAux(movs, List(e))
+  }
 }
