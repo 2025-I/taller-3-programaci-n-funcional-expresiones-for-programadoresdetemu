@@ -1,33 +1,17 @@
-# ManiobrasTrenes.scala
+# Informe del Taller #3: Maniobras de Trenes en Scala
 
-El archivo `ManiobrasTrenes.scala` contiene la implementación de la lógica funcional para simular el movimiento de vagones entre tres vías de un sistema ferroviario. A continuación se explica en detalle cada parte del código:
+Este informe documenta el desarrollo del Taller #3, enfocado en la aplicación de conceptos del paradigma funcional para simular maniobras de trenes. Se trabajó con técnicas como la recursión de cola, funciones de alto orden, reconocimiento de patrones y manejo funcional de listas en Scala.
 
----
+## Descripción General del Código
 
-## Definiciones de Tipos
+El programa define una clase `ManiobrasTrenes` con el objetivo de representar y aplicar una secuencia de movimientos (maniobras) sobre trenes distribuidos en tres vías (principal, uno y dos). Cada movimiento puede implicar desplazar un número de vagones desde o hacia una vía secundaria.
 
-```scala
-type Vagon = Any
-type Tren = List[Vagon]
-type Estado = (Tren, Tren, Tren)
-type Maniobra = List[Movimiento]
-```
+### Tipos Definidos
 
-- **Vagon**: representa un vagón genérico, de cualquier tipo.
-- **Tren**: una lista de vagones.
-- **Estado**: tupla que representa las tres vías (`Principal`, `Uno`, `Dos`).
-- **Maniobra**: lista de movimientos a aplicar.
 
----
 
-## Definición del Trait y Clases de Movimiento
 
-```scala
-trait Movimiento
-case class Principal(n: Int) extends Movimiento
-case class Uno(n: Int) extends Movimiento
-case class Dos(n: Int) extends Movimiento
-```
+
 
 - **Movimiento**: trait base para representar un movimiento.
 - **Principal(n)**, **Uno(n)** y **Dos(n)**: clases que indican hacia dónde y cuántos vagones mover.
