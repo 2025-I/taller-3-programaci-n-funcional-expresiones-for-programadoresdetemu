@@ -4,90 +4,73 @@ Este informe documenta el desarrollo del Taller #3, enfocado en la aplicación d
 
 ## Descripción General del Código
 
-El programa define una clase `ManiobrasTrenes` con el objetivo de representar y aplicar una secuencia de movimientos (maniobras) sobre trenes distribuidos en tres vías (principal, uno y dos). Cada movimiento puede implicar desplazar un número de vagones desde o hacia una vía secundaria.
+El programa define una clase ManiobrasTrenes con el objetivo de representar y aplicar una secuencia de movimientos (maniobras) sobre trenes distribuidos en tres vías (principal, uno y dos). Cada movimiento puede implicar desplazar un número de vagones desde o hacia una vía secundaria.
 
 ### Tipos Definidos
 
+scala
+type Vagon = Any
+type Tren = List[Vagon]
+type Estado = (Tren, Tren, Tren)
+type Maniobra = List[Movimiento]
 
 
+### Jerarquía de Movimientos
+
+scala
+trait Movimiento
+case class Principal(n: Int) extends Movimiento
+case class Uno(n: Int) extends Movimiento
+case class Dos(n: Int) extends Movimiento
 
 
+## Funciones Principales
 
-- **Movimiento**: trait base para representar un movimiento.
-- **Principal(n)**, **Uno(n)** y **Dos(n)**: clases que indican hacia dónde y cuántos vagones mover.
-  - `n > 0`: mover del Principal a Uno/Dos.
-  - `n < 0`: mover desde Uno/Dos al Principal.
-  - `n == 0`: no hacer nada.
+### aplicarMovimiento
 
----
+Recibe un estado (principal, uno, dos) y un movimiento, y retorna el nuevo estado resultante. Utiliza *reconocimiento de patrones* y valida si hay que mover vagones desde o hacia la vía principal, y si hay suficientes vagones disponibles. La lógica incluye:
 
-## aplicarMovimiento
+- Manejo de casos en los que se intenta mover más vagones de los disponibles usando min
+- Uso de abs para evitar condicionales innecesarios
+- Simplificación de estructura para evitar duplicación de lógica
 
-```scala
-def aplicarMovimiento(e: Estado, m: Movimiento): Estado
-```
+### moverElementos
 
-Esta función aplica un solo movimiento `m` a un estado `e` del sistema ferroviario. Utiliza `pattern matching` para identificar el tipo de movimiento (`Uno` o `Dos`) y su dirección (valor de `n`).
+Función genérica que mueve n elementos entre dos listas según si el movimiento es desde la vía principal o no. Utiliza splitAt para dividir la lista de manera eficiente, evitando operaciones costosas como :+ y reverse.
 
-### Lógica de los Casos
+### aplicarMovimientos
 
-- **Uno(n)**:
-  - `n > 0`: mover los últimos `n` vagones del Principal hacia Uno.
-  - `n < 0`: mover los primeros `n` vagones desde Uno al Principal (o desde Principal si Uno está vacío).
-- **Dos(n)**:
-  - `n > 0`: mover los últimos `n` vagones del Principal hacia Dos.
-  - `n < 0`: mover los primeros `n` vagones desde Dos al Principal (o desde Principal si Dos está vacío).
-- **n == 0**: no hacer ningún cambio.
+Aplica una lista de movimientos a un estado inicial, acumulando los estados resultantes. Implementa recursión de cola a través de la función auxiliar aplicarMovimientosAux, garantizando eficiencia en el procesamiento de listas grandes.
 
-Se manejan casos de listas vacías o movimientos mayores al tamaño real para evitar errores.
+## Implementaciones Anteriores (Apuntes)
 
----
+Inicialmente se crearon funciones separadas para mover los primeros y últimos elementos de una lista con recursión de cola:
 
-## moverPrimerosElementos
-
-```scala
+scala
 def moverPrimerosElementos[T](lista: List[T], n: Int): (List[T], List[T])
-```
-
-Función auxiliar recursiva que separa los **primeros `n` elementos** de una lista. Devuelve una tupla:
-- `(elementosMovidos, elementosRestantes)`
-
-Se usa recursión de cola mediante una función interna `moverPrimerosElementosAux`.
-
----
-
-## moverUltimosElementos
-
-```scala
 def moverUltimosElementos[T](lista: List[T], n: Int): (List[T], List[T])
-```
 
-Función similar a la anterior, pero mueve los **últimos `n` elementos**. La lista se invierte primero, y luego se aplica una lógica similar a `moverPrimerosElementos`.
 
----
+Estas funciones funcionaban, pero usaban concatenaciones ineficientes y reversas de listas, lo cual elevó el costo computacional.
 
-## aplicarMovimientos
+## Refactorización y Mejoras
 
-```scala
-def aplicarMovimientos(e: Estado, movs: Maniobra): List[Estado]
-```
+Durante el desarrollo se identificaron problemas como el error de *"Java heap space"*, causado por estructuras recursivas poco optimizadas.
 
-Aplica una lista completa de maniobras (`movs`) de forma secuencial sobre un estado inicial `e`, acumulando todos los estados intermedios en una lista.
+En vez de crear múltiples funciones específicas con estructuras imperativas, se refactorizó el código hacia una solución más eficiente y expresiva, utilizando programación funcional moderna:
 
-Utiliza una función recursiva auxiliar `aplicarMovimientosAux` que:
-- Toma el estado anterior (`acc.head`).
-- Aplica el siguiente movimiento.
-- Agrega el nuevo estado al acumulador.
+- Se reemplazaron funciones específicas por una *única función genérica* moverElementos
+- Se utilizó splitAt para evitar el uso de :+ y reverse, lo que redujo el consumo de memoria
+- Se reorganizó el match con if dentro de los case para *simplificar la lógica sin sobrecargar la coincidencia de patrones*
+- Se usó .abs y min para controlar los límites de movimiento de vagones, evitando errores por intentar mover más vagones de los disponibles
 
-Devuelve todos los estados, desde el inicial hasta el final.
+*Ejemplo:*
+scala
+val cantidadVagonesMover = n.abs min trenOrigen.length
 
----
+
+Esto protege contra desbordamientos al mover solo los vagones que realmente están disponibles.
 
 ## Conclusión
 
-El código modela de forma clara y funcional el movimiento de vagones en un sistema ferroviario:
-- Usa tipos algebraicos para representar estados y movimientos.
-- Implementa lógica condicional robusta con `pattern matching`.
-- Utiliza recursión de cola para eficiencia y seguridad.
-- Ofrece trazabilidad de los estados gracias a la función `aplicarMovimientos`.
-
+El taller permitió poner en práctica los conceptos fundamentales del paradigma funcional en Scala para resolver un problema de simulación de maniobras. La refactorización fue clave para mejorar el rendimiento del programa y evitar errores de memoria. Las decisiones de diseño como el uso de recursión de cola, splitAt y tipos genéricos permitieron una solución más limpia, eficiente y mantenible.
